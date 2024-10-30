@@ -6,7 +6,10 @@
     "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
-    "elysia": "latest"
+    "@wagmi/connectors": "^5.3.3",
+    "@wagmi/core": "^2.14.1",
+    "elysia": "latest",
+    "viem": "2.x"
   },
   "devDependencies": {
     "bun-types": "latest"
