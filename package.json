@@ -8,6 +8,7 @@
   "dependencies": {
     "@wagmi/connectors": "^5.3.3",
     "@wagmi/core": "^2.14.1",
+    "axios": "^1.7.7",
     "elysia": "latest",
     "viem": "2.x"
   },
