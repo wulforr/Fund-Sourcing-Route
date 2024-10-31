@@ -1,14 +1,10 @@
 import axios from "axios"
 import { UsdcAddresses } from "../constants/usdcAddresses"
-/**
- * Fetch bridge fees between two chains for a given token and user address.
- *
- * @param sourceChainId - ID of source chain
- * @param targetChainId - ID of destination chain
- * @param amount - amount of tokens to transfer
- * @param userAddress - user’s wallet address
- * @returns An object containing the source and destination chain IDs and the calculated bridge fee
- */
+import {
+  getRouteWithLeastGas,
+  getRouteWithLeastTime,
+} from "../utils/bridgeUtils"
+
 export const fetchBridgingFess = async (
   sourceChainId: number,
   targetChainId: number,
@@ -40,15 +36,32 @@ export const fetchBridgingFess = async (
     }
 
     const response = await axios(config)
-    if (response.data.success && response?.data?.result?.routes?.length)
-      return response.data?.result?.routes
-    throw new Error("Not able to fetch bridging Quotes")
+    if (response.data.success && response?.data?.result?.routes?.length) {
+      const routes = response?.data?.result?.routes
+      const routeWithLeastGas = getRouteWithLeastGas(routes)
+      const routeWithLeastTime = getRouteWithLeastTime(routes)
+      const res = {
+        sourceChainId,
+        leastGasRoute: {
+          gasFee: routeWithLeastGas.totalGasFeesInUsd,
+          timeTaken: routeWithLeastGas.serviceTime,
+          bridgeUsed: routeWithLeastGas.usedBridgeNames[0],
+        },
+        leastTimeRoute: {
+          gasFee: routeWithLeastTime.totalGasFeesInUsd,
+          timeTaken: routeWithLeastTime.serviceTime,
+          bridgeUsed: routeWithLeastTime.usedBridgeNames[0],
+        },
+      }
+      return res
+    }
+    throw new Error("Not able to fetch bridging Quotes as no routes found")
   } catch (err) {
     throw new Error("Not able to fetch bridging Quotes")
   }
 }
 
-export const fetchBridgingFeesFromMultipleChains = async (
+export const fetchBridgingDetailsFromMultipleChains = async (
   sourceChainIds: number[],
   targetChainId: number,
   amount: number,
