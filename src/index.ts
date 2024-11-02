@@ -30,10 +30,24 @@ const app = new Elysia()
       }
 
       console.time()
-      const balances = await getTokenBalanceOnAllChains(
+      const balancesPromise = getTokenBalanceOnAllChains(
         UsdcAddresses,
         userAddress
       )
+
+      const routeDetailsPromise = fetchBridgingDetailsFromMultipleChains(
+        UsdcAddresses?.map((ele) => ele.chainId).filter(
+          (ele) => ele !== targetChainId
+        ),
+        targetChainId,
+        amount,
+        userAddress
+      )
+
+      const [balances, routeDetails] = await Promise.all([
+        balancesPromise,
+        routeDetailsPromise,
+      ])
 
       const chainsWithTokenBalance = balances.filter(
         (chain) => chain.formatted !== "0"
@@ -64,23 +78,6 @@ const app = new Elysia()
         })
       }
 
-      const chainIdsWithTokenBalance = chainsWithTokenBalance.map(
-        (chain) => chain.chainId
-      )
-      // fetch bridging estimation only for chains that have balance
-      const usdcChainAddressWithTokenBalance = chainIdsWithTokenBalance
-        .map((chainId) => UsdcAddresses.find((ele) => ele.chainId === chainId))
-        .filter((ele): ele is IChain => ele !== undefined)
-
-      const routeDetails = await fetchBridgingDetailsFromMultipleChains(
-        usdcChainAddressWithTokenBalance
-          ?.map((ele) => ele.chainId)
-          .filter((ele) => ele !== targetChainId),
-        targetChainId,
-        amount,
-        userAddress
-      )
-
       const routeDetailsWithAmount = routeDetails.map((route) => {
         return {
           ...route,
@@ -98,12 +95,11 @@ const app = new Elysia()
         prioritizeTime
       )
 
-      console.timeEnd()
-
       const res = transformSourcedFundDetails(
         sourcingFundDetails,
         targetChainId
       )
+      console.timeEnd()
 
       return {
         success: true,
